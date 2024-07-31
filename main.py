@@ -15,6 +15,9 @@ class KubernetesResources:
             "Namespaces" : list()
         }
 
+    def dump_output_struct(self):
+        print(yaml.dump(self.output_struct))
+
     def populate_namespaces(self):
         r = self.core_client.list_namespace()
         self.all_namespaces = [n.metadata.name for n in r.items]
@@ -115,7 +118,6 @@ class KubernetesResources:
             for each_deployment in namespaced_deployments.items:
                 self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"].append(deployment_header)
                 self.add_deployment_to_output_struct(each_deployment)
-        print(yaml.dump(self.output_struct))
             
 
 def main():
