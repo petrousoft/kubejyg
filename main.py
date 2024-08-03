@@ -34,11 +34,11 @@ class KubernetesResources:
         """
         Returns all service objects in the current namespace.
         """
-        return self.apps_client.list_namespaced_service(self.current_namespace)
+        return self.core_client.list_namespaced_service(self.current_namespace)
 
     def add_current_namespace_to_output_struct(self):
         """
-        1. Check if output_struct["Namespaces"] is empty and add the current namespace as last - update current_namespaces_index
+        1. Check if output_struct["Namespaces"] is empty and add the current namespace as last - update current_namespace_index
         2. If output_struct["Namespaces"] not empty:
             2.1 Check if dicts in output_struct["Namespaces"] contain the namespace
             2.2 If namespace is found - update current_namespace_index
@@ -127,6 +127,45 @@ class KubernetesResources:
 
         self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"][-1].update(deployment_dict)
 
+    def add_service_to_output_struct(self, service):
+        """ Filters necessary deployment data and appents the deployment object to the list. """
+
+        service_dict = service.to_dict()
+        service_dict.pop("api_version")
+        service_dict.pop("kind")
+        service_dict.pop("status")
+
+        metadata_keys_to_remove = [
+            "deletion_grace_period_seconds",
+            "deletion_timestamp",
+            "finalizers",
+            "generate_name",
+            "managed_fields",
+            "owner_references",
+            "resource_version",
+            "self_link",
+            "uid"
+        ]
+
+        spec_template_keys_to_remove = [
+            "metadata"
+        ]
+
+        # TODO: unfold
+        spec_template_spec_keys_to_remove = [
+            'active_deadline_seconds',
+            'automount_service_account_token',
+            'dns_config',
+            'dns_policy',
+            'enable_service_links', 'ephemeral_containers', 'host_aliases', 'host_ipc', 'host_network', 'host_pid', 'host_users', 'hostname', 'image_pull_secrets', 'init_containers', 'node_name', 'node_selector', 'os', 'overhead', 'preemption_policy', 'priority', 'priority_class_name', 'readiness_gates', 'resource_claims', 'restart_policy', 'runtime_class_name', 'scheduler_name', 'scheduling_gates', 'security_context', 'service_account', 'service_account_name', 'set_hostname_as_fqdn', 'share_process_namespace', 'subdomain', 'termination_grace_period_seconds', 'tolerations', 'topology_spread_constraints' 
+        ]
+
+        # Remove unecessary top level metadata keys
+        for k in metadata_keys_to_remove:
+            service_dict["metadata"].pop(k)
+
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"][-1].update(service_dict)
+
     # TODO: See if you can reduce duplication with these functions - individual resource fetching.
     def construct_all_deployments_in_all_namespaces(self):
         """
@@ -163,15 +202,15 @@ class KubernetesResources:
             self.init_service_list()
             namespaced_services = self.get_namespaced_services()
 
-            api_version = namespaced_deployments.api_version
-            kind = namespaced_deployments.kind
+            api_version = namespaced_services.api_version
+            kind = namespaced_services.kind
             service_header = {
                 "apiVersion" : api_version,
                 "kind" : kind
             }
 
             for each_service in namespaced_services.items:
-                self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Services"].append(service_header)
+                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
                 self.add_service_to_output_struct(each_service)
             
 
