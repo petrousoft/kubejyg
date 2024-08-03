@@ -14,27 +14,42 @@ class KubernetesResources:
         self.output_struct = {
             "Namespaces" : list()
         }
+        self.all_namespaces = []
 
     def dump_output_struct(self):
         print(yaml.dump(self.output_struct))
 
     def populate_namespaces(self):
-        r = self.core_client.list_namespace()
-        self.all_namespaces = [n.metadata.name for n in r.items]
+        if len(self.all_namespaces) == 0:
+            r = self.core_client.list_namespace()
+            self.all_namespaces = [n.metadata.name for n in r.items]
 
     def get_namespaced_deployments(self):
         """
-        Returns all deployment objects in a namespace.
+        Returns all deployment objects in the current namespace.
         """
         return self.apps_client.list_namespaced_deployment(self.current_namespace)
 
-    def init_namespace_list(self):
-        """ Initializes the namespace list of resources. """
-        self.output_struct["Namespaces"].append({self.current_namespace : list()})
+    def get_namespaced_services(self):
+        """
+        Returns all service objects in the current namespace.
+        """
+        return self.apps_client.list_namespaced_service(self.current_namespace)
 
+    def init_namespace_list(self):
+        """ Initializes the namespace list of resources, if empty. """
+        if len(self.output_struct["Namespaces"]) == 0:
+            # Missing namespaces list
+            self.output_struct["Namespaces"].append({self.current_namespace : list()})
+
+    # TODO: make this function generic and reduce - Pass type of resource to expand the list.
     def init_deployment_list(self):
         """ Initializes the namespace list of resources. """
         self.output_struct["Namespaces"][-1][self.current_namespace].append({"Deployments" : list()})
+
+    def init_service_list(self):
+        """ Initializes the namespaced list of resources. """
+        self.output_struct["Namespaces"][-1][self.current_namespace].append({"Services" : list()})
 
     def add_deployment_to_output_struct(self, deployment):
         """ Filters necessary deployment data and appents the deployment object to the list. """
@@ -94,11 +109,10 @@ class KubernetesResources:
 
         self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"][-1].update(deployment_dict)
 
-
+    # TODO: See if you can reduce duplication with these functions - individual resource fetching.
     def construct_all_deployments_in_all_namespaces(self):
         """
         Adds all deployments for all namespaces into the output struct - YAML.
-        OUTPUT: YAML output of deployment object
         """
 
         self.populate_namespaces()
@@ -118,6 +132,29 @@ class KubernetesResources:
             for each_deployment in namespaced_deployments.items:
                 self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"].append(deployment_header)
                 self.add_deployment_to_output_struct(each_deployment)
+
+    def construct_all_services_in_all_namespaces(self):
+        """
+        Adds all services for all namespaces into the output struct - YAML.
+        """
+
+        self.populate_namespaces()
+        for ns_name in self.all_namespaces:
+            self.current_namespace = ns_name
+            self.init_namespace_list()
+            self.init_service_list()
+            namespaced_services = self.get_namespaced_services()
+
+            api_version = namespaced_deployments.api_version
+            kind = namespaced_deployments.kind
+            service_header = {
+                "apiVersion" : api_version,
+                "kind" : kind
+            }
+
+            for each_service in namespaced_services.items:
+                self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Services"].append(service_header)
+                self.add_service_to_output_struct(each_service)
             
 
 def main():
@@ -128,6 +165,8 @@ def main():
 
     kuberes = KubernetesResources()
     kuberes.construct_all_deployments_in_all_namespaces()
+    kuberes.construct_all_services_in_all_namespaces()
+    kuberes.dump_output_struct()
 
 
 if __name__ == "__main__":
