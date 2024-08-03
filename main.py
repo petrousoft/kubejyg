@@ -36,20 +36,38 @@ class KubernetesResources:
         """
         return self.apps_client.list_namespaced_service(self.current_namespace)
 
-    def init_namespace_list(self):
-        """ Initializes the namespace list of resources, if empty. """
+    def add_current_namespace_to_output_struct(self):
+        """
+        1. Check if output_struct["Namespaces"] is empty and add the current namespace as last - update current_namespaces_index
+        2. If output_struct["Namespaces"] not empty:
+            2.1 Check if dicts in output_struct["Namespaces"] contain the namespace
+            2.2 If namespace is found - update current_namespace_index
+            2.3 If namespace is NOT found - append current_namespacec - update current_namespace_index
+        """
+
         if len(self.output_struct["Namespaces"]) == 0:
-            # Missing namespaces list
+            # If namespaces empty, initialize with current namespace
             self.output_struct["Namespaces"].append({self.current_namespace : list()})
+            self.current_namespace_index = -1
+        else:
+            namespace_found = False
+            for i in range(len(self.output_struct["Namespaces"])):
+                if self.current_namespace in self.output_struct["Namespaces"][i].keys():
+                    namespace_found = True
+                    self.current_namespace_index = i
+                    break
+            if namespace_found == False:
+                self.output_struct["Namespaces"].append({self.current_namespace : list()})
+                self.current_namespace_index = -1
 
     # TODO: make this function generic and reduce - Pass type of resource to expand the list.
     def init_deployment_list(self):
         """ Initializes the namespace list of resources. """
-        self.output_struct["Namespaces"][-1][self.current_namespace].append({"Deployments" : list()})
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace].append({"Deployments" : list()})
 
     def init_service_list(self):
         """ Initializes the namespaced list of resources. """
-        self.output_struct["Namespaces"][-1][self.current_namespace].append({"Services" : list()})
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace].append({"Services" : list()})
 
     def add_deployment_to_output_struct(self, deployment):
         """ Filters necessary deployment data and appents the deployment object to the list. """
@@ -118,7 +136,7 @@ class KubernetesResources:
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
-            self.init_namespace_list()
+            self.add_current_namespace_to_output_struct()
             self.init_deployment_list()
             namespaced_deployments = self.get_namespaced_deployments()
 
@@ -130,7 +148,7 @@ class KubernetesResources:
             }
 
             for each_deployment in namespaced_deployments.items:
-                self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"].append(deployment_header)
+                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"].append(deployment_header)
                 self.add_deployment_to_output_struct(each_deployment)
 
     def construct_all_services_in_all_namespaces(self):
@@ -141,7 +159,7 @@ class KubernetesResources:
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
-            self.init_namespace_list()
+            self.add_current_namespace_to_output_struct()
             self.init_service_list()
             namespaced_services = self.get_namespaced_services()
 
@@ -165,6 +183,7 @@ def main():
 
     kuberes = KubernetesResources()
     kuberes.construct_all_deployments_in_all_namespaces()
+    kuberes.dump_output_struct()
     kuberes.construct_all_services_in_all_namespaces()
     kuberes.dump_output_struct()
 
