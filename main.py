@@ -125,7 +125,7 @@ class KubernetesResources:
         for k in spec_template_spec_keys_to_remove:
             deployment_dict["spec"]["template"]["spec"].pop(k)
 
-        self.output_struct["Namespaces"][-1][self.current_namespace][-1]["Deployments"][-1].update(deployment_dict)
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"][-1].update(deployment_dict)
 
     def add_service_to_output_struct(self, service):
         """ Filters necessary deployment data and appents the deployment object to the list. """
@@ -171,22 +171,17 @@ class KubernetesResources:
         """
         Adds all deployments for all namespaces into the output struct - YAML.
         """
-
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
             self.add_current_namespace_to_output_struct()
             self.init_deployment_list()
             namespaced_deployments = self.get_namespaced_deployments()
-
-            api_version = namespaced_deployments.api_version
-            kind = namespaced_deployments.kind
-            deployment_header = {
-                "apiVersion" : api_version,
-                "kind" : kind
-            }
-
             for each_deployment in namespaced_deployments.items:
+                deployment_header = {
+                    "apiVersion" : "apps/v1",
+                    "kind" : "Deployment" 
+                }
                 self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"].append(deployment_header)
                 self.add_deployment_to_output_struct(each_deployment)
 
@@ -201,15 +196,11 @@ class KubernetesResources:
             self.add_current_namespace_to_output_struct()
             self.init_service_list()
             namespaced_services = self.get_namespaced_services()
-
-            api_version = namespaced_services.api_version
-            kind = namespaced_services.kind
-            service_header = {
-                "apiVersion" : api_version,
-                "kind" : kind
-            }
-
             for each_service in namespaced_services.items:
+                service_header = {
+                    "apiVersion" : "v1",
+                    "kind" : "Service"
+                }
                 self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
                 self.add_service_to_output_struct(each_service)
             
