@@ -36,6 +36,12 @@ class KubernetesResources:
         """
         return self.core_client.list_namespaced_service(self.current_namespace)
 
+    def get_namespaced_ingress(self):
+        """
+        Returns all ingress objects in the current namespace.
+        """
+        return self.networking_client.list_namespaced_ingress(self.current_namespace)
+
     def add_current_namespace_to_output_struct(self):
         """
         1. Check if output_struct["Namespaces"] is empty and add the current namespace as last - update current_namespace_index
@@ -68,6 +74,11 @@ class KubernetesResources:
     def init_service_list(self):
         """ Initializes the namespaced list of resources. """
         self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace].append({"Services" : list()})
+
+    def init_ingress_list(self):
+        """ Initializes the namespace list of resources. """
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace].append({"Ingress" : list()})
+
 
     def add_deployment_to_output_struct(self, deployment):
         """ Filters necessary deployment data and appents the deployment object to the list. """
@@ -166,6 +177,65 @@ class KubernetesResources:
 
         self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"][-1].update(service_dict)
 
+
+    def add_ingress_to_output_struct(self, ingress):
+        """ Filters necessary ingress data and appends the ingress object to the list. """
+
+        ingress_dict = ingress.to_dict()
+        ingress_dict.pop("api_version")
+        ingress_dict.pop("kind")
+        ingress_dict.pop("status")
+
+        metadata_keys_to_remove = [
+            "deletion_grace_period_seconds",
+            "deletion_timestamp",
+            "finalizers",
+            "generate_name",
+            "managed_fields",
+            "owner_references",
+            "resource_version",
+            "self_link",
+            "uid"
+        ]
+
+        spec_keys_to_remove = [
+            "paused",
+            "progress_deadline_seconds",
+            "revision_history_limit",
+        ]
+
+        spec_template_keys_to_remove = [
+            "metadata"
+        ]
+
+        # TODO: unfold
+        spec_template_spec_keys_to_remove = [
+            'active_deadline_seconds',
+            'automount_service_account_token',
+            'dns_config',
+            'dns_policy',
+            'enable_service_links', 'ephemeral_containers', 'host_aliases', 'host_ipc', 'host_network', 'host_pid', 'host_users', 'hostname', 'image_pull_secrets', 'init_containers', 'node_name', 'node_selector', 'os', 'overhead', 'preemption_policy', 'priority', 'priority_class_name', 'readiness_gates', 'resource_claims', 'restart_policy', 'runtime_class_name', 'scheduler_name', 'scheduling_gates', 'security_context', 'service_account', 'service_account_name', 'set_hostname_as_fqdn', 'share_process_namespace', 'subdomain', 'termination_grace_period_seconds', 'tolerations', 'topology_spread_constraints' 
+        ]
+
+        # Remove unecessary top level metadata keys
+        for k in metadata_keys_to_remove:
+            ingress_dict["metadata"].pop(k)
+
+        # Remove unecessary top level spec keys
+        #for k in spec_keys_to_remove:
+        #    ingress_dict["spec"].pop(k)
+
+        # Remove duplicated metadata from spec
+        #for k in spec_template_keys_to_remove:
+        #    ingress_dict["spec"]["template"].pop(k)
+
+        # Remove redundant keys from spec->template->spec
+        #for k in spec_template_spec_keys_to_remove:
+        #    ingress_dict["spec"]["template"]["spec"].pop(k)
+
+        self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Ingress"][-1].update(ingress_dict)
+
+
     # TODO: See if you can reduce duplication with these functions - individual resource fetching.
     def construct_all_deployments_in_all_namespaces(self):
         """
@@ -204,6 +274,24 @@ class KubernetesResources:
                 self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
                 self.add_service_to_output_struct(each_service)
             
+    def construct_all_ingress_in_all_namespaces(self):
+        """
+        Adds all ingress for all namespaces into the output struct - YAML.
+        """
+        self.populate_namespaces()
+        for ns_name in self.all_namespaces:
+            self.current_namespace = ns_name
+            self.add_current_namespace_to_output_struct()
+            self.init_ingress_list()
+            namespaced_ingress = self.get_namespaced_ingress()
+            for each_ingress in namespaced_ingress.items:
+                ingress_header = {
+                    "apiVersion" : "networking.k8s.io/v1",
+                    "kind" : "Ingress" 
+                }
+                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Ingress"].append(ingress_header)
+                self.add_ingress_to_output_struct(each_ingress)
+
 
 def main():
 
@@ -213,8 +301,8 @@ def main():
 
     kuberes = KubernetesResources()
     kuberes.construct_all_deployments_in_all_namespaces()
-    kuberes.dump_output_struct()
     kuberes.construct_all_services_in_all_namespaces()
+    kuberes.construct_all_ingress_in_all_namespaces()
     kuberes.dump_output_struct()
 
 
