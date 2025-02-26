@@ -16,8 +16,11 @@ class KubernetesResources:
         }
         self.all_namespaces = []
 
-    def dump_output_struct(self):
+    def dump_output_struct_yaml(self):
         print(yaml.dump(self.output_struct))
+
+    def dump_output_struct_json(self):
+        print(json.dumps(self.output_struct, indent=4, default=str))
 
     def populate_namespaces(self):
         if len(self.all_namespaces) == 0:
@@ -259,7 +262,6 @@ class KubernetesResources:
         """
         Adds all services for all namespaces into the output struct - YAML.
         """
-
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
@@ -303,7 +305,8 @@ def main():
     kuberes.construct_all_deployments_in_all_namespaces()
     kuberes.construct_all_services_in_all_namespaces()
     kuberes.construct_all_ingress_in_all_namespaces()
-    kuberes.dump_output_struct()
+    # kuberes.dump_output_struct_yaml()
+    kuberes.dump_output_struct_json()
 
 
 if __name__ == "__main__":
