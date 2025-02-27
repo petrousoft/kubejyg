@@ -1,0 +1,23 @@
+[project]
+name = "kubejyg"
+version = "0.0.1"
+license-file = [ "LICENSE" ]
+authors = [
+  { name = "Ioannis Petrousov", email = "contact@petrousoft.com" },
+]
+description = "kubejyg: Kubernetes Resource Extraction and Transformation with Namespace Grouping ready for filtering with jq, yq and grep."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/gpetrousov/kubejyg"
+Issues = "https://github.com/gpetrousov/kubejyg/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
