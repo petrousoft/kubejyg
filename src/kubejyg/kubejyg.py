@@ -1,6 +1,7 @@
 from kubernetes import client, config
 import yaml
 import json
+import argparse
 
 
 class KubernetesResources:
@@ -295,9 +296,9 @@ class KubernetesResources:
                 self.add_ingress_to_output_struct(each_ingress)
 
 
-def main():
+def main(args):
+    pass
 
-    # Use current_context from ~/.kubeconfig
     # TODO: move into class
     config.load_kube_config()
 
@@ -305,9 +306,22 @@ def main():
     kuberes.construct_all_deployments_in_all_namespaces()
     kuberes.construct_all_services_in_all_namespaces()
     kuberes.construct_all_ingress_in_all_namespaces()
-    # kuberes.dump_output_struct_yaml()
-    kuberes.dump_output_struct_json()
+
+    if args.output == "json":
+        kuberes.dump_output_struct_json()
+    else:
+        kuberes.dump_output_struct_yaml()
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(
+        prog="kubejyg",
+        usage='%(prog)s [options]',
+        description="Kubernetes Resource Extraction with Namespace Grouping ready for filtering with jq, yq and grep",
+        conflict_handler="error",
+        add_help=True
+        )
+    parser.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
+
+    main(parser.parse_args())
