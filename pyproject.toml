@@ -5,7 +5,7 @@ license-file = [ "LICENSE" ]
 authors = [
   { name = "Ioannis Petrousov", email = "contact@petrousoft.com" },
 ]
-description = "kubejyg: Kubernetes Resource Extraction and Transformation with Namespace Grouping built for filtering with jq, yq and grep."
+description = "kubejyg: Kubernetes Resource Extraction with Namespace Grouping built for filtering with jq, yq and grep."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
