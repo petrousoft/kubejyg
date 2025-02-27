@@ -296,8 +296,17 @@ class KubernetesResources:
                 self.add_ingress_to_output_struct(each_ingress)
 
 
-def main(args):
-    pass
+def main():
+
+    parser = argparse.ArgumentParser(
+        prog="kubejyg",
+        usage='%(prog)s [options]',
+        description="Kubernetes Resource Extraction with Namespace Grouping ready for filtering with jq, yq and grep.",
+        conflict_handler="error",
+        add_help=True
+        )
+    parser.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
+    args = parser.parse_args()
 
     # TODO: move into class
     config.load_kube_config()
@@ -314,14 +323,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(
-        prog="kubejyg",
-        usage='%(prog)s [options]',
-        description="Kubernetes Resource Extraction with Namespace Grouping ready for filtering with jq, yq and grep",
-        conflict_handler="error",
-        add_help=True
-        )
-    parser.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
-
-    main(parser.parse_args())
+    main()
