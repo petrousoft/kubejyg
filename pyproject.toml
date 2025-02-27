@@ -1,6 +1,6 @@
 [project]
 name = "kubejyg"
-version = "0.0.1"
+version = "0.0.12"
 license-file = [ "LICENSE" ]
 authors = [
   { name = "Ioannis Petrousov", email = "contact@petrousoft.com" },
@@ -21,3 +21,16 @@ Issues = "https://github.com/gpetrousov/kubejyg/issues"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+kubejyg = "kubejyg:main"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/kubejyg",
+    "/README.md",
+    "/LICENSE",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kubejyg"]
