@@ -13,6 +13,12 @@ Fetch all deployment manifests from all namespaces in YAML.
 kubejyg | yq ".Namespaces.[].[].[].Deployments" -C
 ```
 
+Fetch all deployment manifests across all namespaces in YAML and filter nulls.
+
+```bash
+kubejyg | yq ".Namespaces[].[].[].Deployments | select ( . != null ) | .[]" -C
+```
+
 Fetch all the annotations from all the Services across all Namespaces in JSON.
 
 ```bash
