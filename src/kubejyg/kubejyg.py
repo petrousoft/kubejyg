@@ -248,16 +248,18 @@ class KubernetesResources:
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
-            self.add_current_namespace_to_output_struct()
-            self.init_deployment_list()
             namespaced_deployments = self.get_namespaced_deployments()
-            for each_deployment in namespaced_deployments.items:
-                deployment_header = {
-                    "apiVersion" : "apps/v1",
-                    "kind" : "Deployment" 
-                }
-                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"].append(deployment_header)
-                self.add_deployment_to_output_struct(each_deployment)
+            if len(namespaced_deployments.items) != 0:
+                self.add_current_namespace_to_output_struct()
+                self.init_deployment_list()
+                for each_deployment in namespaced_deployments.items:
+                    deployment_header = {
+                        "apiVersion" : "apps/v1",
+                        "kind" : "Deployment" 
+                    }
+                    self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"].append(deployment_header)
+                    self.add_deployment_to_output_struct(each_deployment)
+
 
     def construct_all_services_in_all_namespaces(self):
         """
@@ -266,16 +268,17 @@ class KubernetesResources:
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
-            self.add_current_namespace_to_output_struct()
-            self.init_service_list()
             namespaced_services = self.get_namespaced_services()
-            for each_service in namespaced_services.items:
-                service_header = {
-                    "apiVersion" : "v1",
-                    "kind" : "Service"
-                }
-                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
-                self.add_service_to_output_struct(each_service)
+            if len(namespaced_services.items) != 0:
+                self.add_current_namespace_to_output_struct()
+                self.init_service_list()
+                for each_service in namespaced_services.items:
+                    service_header = {
+                        "apiVersion" : "v1",
+                        "kind" : "Service"
+                    }
+                    self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
+                    self.add_service_to_output_struct(each_service)
             
     def construct_all_ingress_in_all_namespaces(self):
         """
@@ -284,16 +287,17 @@ class KubernetesResources:
         self.populate_namespaces()
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
-            self.add_current_namespace_to_output_struct()
-            self.init_ingress_list()
             namespaced_ingress = self.get_namespaced_ingress()
-            for each_ingress in namespaced_ingress.items:
-                ingress_header = {
-                    "apiVersion" : "networking.k8s.io/v1",
-                    "kind" : "Ingress" 
-                }
-                self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Ingress"].append(ingress_header)
-                self.add_ingress_to_output_struct(each_ingress)
+            if len(namespaced_ingress.items) != 0:
+                self.add_current_namespace_to_output_struct()
+                self.init_ingress_list()
+                for each_ingress in namespaced_ingress.items:
+                    ingress_header = {
+                        "apiVersion" : "networking.k8s.io/v1",
+                        "kind" : "Ingress" 
+                    }
+                    self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Ingress"].append(ingress_header)
+                    self.add_ingress_to_output_struct(each_ingress)
 
 
 def main():
