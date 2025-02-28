@@ -1,6 +1,6 @@
 [project]
 name = "kubejyg"
-version = "0.0.12"
+version = "0.0.13"
 license-file = [ "LICENSE" ]
 authors = [
   { name = "Ioannis Petrousov", email = "contact@petrousoft.com" },
