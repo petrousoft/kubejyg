@@ -1,6 +1,6 @@
 [project]
 name = "kubejyg"
-version = "0.0.14"
+version = "0.0.15"
 license-file = [ "LICENSE" ]
 authors = [
   { name = "Ioannis Petrousov", email = "contact@petrousoft.com" },
@@ -13,7 +13,7 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Operating System :: OS Independent",
 ]
-dependencies = [ "kubernetes>=30.1.0" ]
+dependencies = [ "kubernetes>=27.0.0" ]
 
 [project.urls]
 Homepage = "https://github.com/gpetrousov/kubejyg"
