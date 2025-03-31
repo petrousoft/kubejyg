@@ -35,7 +35,7 @@ class KubejygArgParser(argparse.ArgumentParser):
     def add_arguments(self):
         self.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
         self.add_argument("-c", "--config", type=str, required=False, default=os.environ.get('KUBECONFIG', '~/.kube/config'), help="Kubernetes config file.")
-        self.add_argument("-n", "--namespace", nargs="*", type=str, required=False, help="Space separated Kubernetes Namespace(s).")
+        self.add_argument("-n", "--namespace", nargs="*", type=str, required=False, default=[], help="Space separated Kubernetes Namespace(s).")
 
     def load_arguments(self):
         self.args = self.parse_args()
@@ -80,7 +80,10 @@ class KubernetesResources:
     def populate_namespaces(self, namespaces):
         if len(self.all_namespaces) == 0:
             r = self.core_client.list_namespace()
-            self.all_namespaces = list(set(n.metadata.name for n in r.items) & set(namespaces))
+            if len(namespaces) > 0:
+                self.all_namespaces = list(set(n.metadata.name for n in r.items) & set(namespaces))
+            else:
+                self.all_namespaces = [n.metadata.name for n in r.items]
 
     def get_namespaced_deployments(self):
         """
