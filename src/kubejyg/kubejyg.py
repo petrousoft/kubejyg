@@ -14,6 +14,49 @@ class KubejygHelpFormatter (argparse.HelpFormatter):
         return super()._split_lines(text, width) + [""]
 
 
+class KubejygArgParser(argparse.ArgumentParser):
+    """
+    Custom Argument parser extension
+    """
+
+    def __init__(self):
+        super().__init__(
+            prog="Kubejyg",
+            usage="%(prog)s [options]",
+            description="Kubernetes Resource Extraction with Namespace Grouping ready for filtering with jq, yq and grep.",
+            conflict_handler="error",
+            add_help=True,
+            formatter_class=KubejygHelpFormatter
+        )
+        self.add_arguments()
+        self.load_arguments()
+        self.validate_kubeconfig()
+
+    def add_arguments(self):
+        self.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
+        self.add_argument("-c", "--config", type=str, required=False, default=os.environ.get('KUBECONFIG', '~/.kube/config'), help="Kubernetes config file.")
+        self.add_argument("-n", "--namespace", type=str, required=False, default="all", help="Space separated Kubernetes Namespace(s).")
+
+    def load_arguments(self):
+        self.args = self.parse_args()
+
+    def validate_kubeconfig(self):
+        """
+        Validate if provided kubeconfig exists - exit if not.
+        """
+        if not os.path.exists(os.path.expanduser(self.args.config)):
+            print(f"kubeconfig: cannot access {config}: No such file")
+            exit(1)
+
+        if not os.path.isfile(os.path.expanduser(self.args.config)):
+            print(f"kubeconfig: {config} is not a file.")
+            exit(2)
+
+        if os.path.getsize(os.path.expanduser(self.args.config)) == 0:
+            print(f"kubeconfig: {config}: is empty")
+            exit(3)
+
+
 class KubernetesResources:
     """
     One class to rule them all.
@@ -276,45 +319,16 @@ class KubernetesResources:
                     self.add_ingress_to_output_struct(each_ingress)
 
 
-def validate_kubeconfig(config):
-    """
-    Validate if provided kubeconfig exists - exit if not.
-    """
-    if not os.path.exists(os.path.expanduser(config)):
-        print(f"kubeconfig: cannot access {config}: No such file")
-        exit(1)
-
-    if not os.path.isfile(os.path.expanduser(config)):
-        print(f"kubeconfig: {config} is not a file.")
-        exit(2)
-
-    if os.path.getsize(os.path.expanduser(config)) == 0:
-        print(f"kubeconfig: {config}: is empty")
-        exit(3)
-
-
 def main():
-    parser = argparse.ArgumentParser(
-        prog="kubejyg",
-        usage='%(prog)s [options]',
-        description="Kubernetes Resource Extraction with Namespace Grouping ready for filtering with jq, yq and grep.",
-        conflict_handler="error",
-        add_help=True,
-        formatter_class=KubejygHelpFormatter
-        )
-    parser.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
-    parser.add_argument("-kc", "--kubeconfig", type=str, required=False, default=os.environ.get('KUBECONFIG', '~/.kube/config'), help="Kubernetes config file.")
-    args = parser.parse_args()
-
-    validate_kubeconfig(args.kubeconfig)
-    config.load_kube_config(config_file=args.kubeconfig)
+    kubejyg_argparser = KubejygArgParser()
+    config.load_kube_config(config_file=kubejyg_argparser.args.config)
 
     kuberes = KubernetesResources()
     kuberes.construct_all_deployments_in_all_namespaces()
     kuberes.construct_all_services_in_all_namespaces()
     kuberes.construct_all_ingress_in_all_namespaces()
 
-    if args.output == "json":
+    if kubejyg_argparser.args.output == "json":
         kuberes.dump_output_struct_json()
     else:
         kuberes.dump_output_struct_yaml()
