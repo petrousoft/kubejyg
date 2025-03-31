@@ -35,7 +35,7 @@ class KubejygArgParser(argparse.ArgumentParser):
     def add_arguments(self):
         self.add_argument("-o", "--output", type=str, required=False, choices=["json", "yaml"], help="Output in JSON or (default) YAML format.")
         self.add_argument("-c", "--config", type=str, required=False, default=os.environ.get('KUBECONFIG', '~/.kube/config'), help="Kubernetes config file.")
-        self.add_argument("-n", "--namespace", type=str, required=False, default="all", help="Space separated Kubernetes Namespace(s).")
+        self.add_argument("-n", "--namespace", nargs="*", type=str, required=False, help="Space separated Kubernetes Namespace(s).")
 
     def load_arguments(self):
         self.args = self.parse_args()
@@ -77,10 +77,10 @@ class KubernetesResources:
     def dump_output_struct_json(self):
         print(json.dumps(self.output_struct, indent=4, default=str))
 
-    def populate_namespaces(self):
+    def populate_namespaces(self, namespaces):
         if len(self.all_namespaces) == 0:
             r = self.core_client.list_namespace()
-            self.all_namespaces = [n.metadata.name for n in r.items]
+            self.all_namespaces = list(set(n.metadata.name for n in r.items) & set(namespaces))
 
     def get_namespaced_deployments(self):
         """
@@ -261,11 +261,11 @@ class KubernetesResources:
         self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Ingress"][-1].update(ingress_dict)
 
     # TODO: See if you can reduce duplication with these functions - individual resource fetching.
-    def construct_all_deployments_in_all_namespaces(self):
+    def construct_all_deployments_in_namespaces(self, namespaces):
         """
         Adds all deployments for all namespaces into the output struct - YAML.
         """
-        self.populate_namespaces()
+        self.populate_namespaces(namespaces)
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
             namespaced_deployments = self.get_namespaced_deployments()
@@ -280,11 +280,11 @@ class KubernetesResources:
                     self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Deployments"].append(deployment_header)
                     self.add_deployment_to_output_struct(each_deployment)
 
-    def construct_all_services_in_all_namespaces(self):
+    def construct_all_services_in_namespaces(self, namespaces):
         """
         Adds all services for all namespaces into the output struct - YAML.
         """
-        self.populate_namespaces()
+        self.populate_namespaces(namespaces)
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
             namespaced_services = self.get_namespaced_services()
@@ -299,11 +299,11 @@ class KubernetesResources:
                     self.output_struct["Namespaces"][self.current_namespace_index][self.current_namespace][-1]["Services"].append(service_header)
                     self.add_service_to_output_struct(each_service)
 
-    def construct_all_ingress_in_all_namespaces(self):
+    def construct_all_ingress_in_namespaces(self, namespaces):
         """
         Adds all ingress for all namespaces into the output struct - YAML.
         """
-        self.populate_namespaces()
+        self.populate_namespaces(namespaces)
         for ns_name in self.all_namespaces:
             self.current_namespace = ns_name
             namespaced_ingress = self.get_namespaced_ingress()
@@ -324,9 +324,9 @@ def main():
     config.load_kube_config(config_file=kubejyg_argparser.args.config)
 
     kuberes = KubernetesResources()
-    kuberes.construct_all_deployments_in_all_namespaces()
-    kuberes.construct_all_services_in_all_namespaces()
-    kuberes.construct_all_ingress_in_all_namespaces()
+    kuberes.construct_all_deployments_in_namespaces(kubejyg_argparser.args.namespace)
+    kuberes.construct_all_services_in_namespaces(kubejyg_argparser.args.namespace)
+    kuberes.construct_all_ingress_in_namespaces(kubejyg_argparser.args.namespace)
 
     if kubejyg_argparser.args.output == "json":
         kuberes.dump_output_struct_json()
